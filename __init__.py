@@ -278,7 +278,7 @@ class Server(Container):
     	Example Usage:
         	server = Server(('127.0.0.1', 8080))
         	server.init()
-        	container = server.listen()
+        	server.listen()
     	"""
 		global __session__
 		if hasattr(self,'bridge'):
