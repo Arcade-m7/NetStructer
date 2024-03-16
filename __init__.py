@@ -1,11 +1,8 @@
-
-
 import os , sys
 	
-__file__ = __file__ if __file__ not in sys.path else ''
+__file = __file__ if __file__ not in sys.path else ''
 	
-sys.path.append(os.path.dirname(__file__))
-
+sys.path.append(os.path.dirname(__file))
 import pickle as json
 import socket
 from threading import Thread
@@ -95,6 +92,8 @@ class Bridge:
 				raise ValueError(f"can't not encode {buffer}")
 		except TypeError:
 			raise ValueError(f"can't not encode {buffer}")
+		except ConnectionAbortedError as er:
+			raise er
 		except ConnectionResetError:
 			raise ConnectionResetError('the session has closed!')
 
@@ -110,7 +109,10 @@ class Bridge:
 		"""
 		try:
 			while self.__end_of_bytes not in self.__data:
-				self.__data += self.__server.recv(buffer)
+				var = self.__server.recv(buffer)
+				if var == b'':
+					raise ConnectionAbortedError
+				self.__data += var
 				if len(self.__data) >= buffer_size and buffer_size != -1:
 					raise Error.BufferDataError(f'the data bigger than {buffer_size}')
 			later = self.__data[self.__data.find(self.__end_of_bytes)+len(self.__end_of_bytes):]
@@ -119,6 +121,8 @@ class Bridge:
 			return pyl
 		except ConnectionResetError:
 			raise ConnectionResetError('the session has closed!')
+		except ConnectionAbortedError as er:
+			raise er
 		except TimeoutError:
 			raise TimeoutError('timed out')
 
@@ -275,7 +279,7 @@ class Server(Container):
     	Example Usage:
         	server = Server(('127.0.0.1', 8080))
         	server.init()
-        	server.listen()
+        	container = server.listen()
     	"""
 		global __session__
 		if hasattr(self,'bridge'):
@@ -319,5 +323,5 @@ class Server(Container):
 		global run
 		run = False
 		sleep(0.5)
-		self.ser.close()
+		self.bridge.close()
 				
