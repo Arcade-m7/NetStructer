@@ -2,8 +2,13 @@ try:
 	import cryptography 
 except ImportError:
 	raise ImportError('cryptography must be installed')
+
+import os , sys
 	
-import os , sys ; sys.path.append(os.path.dirname(__file__)) if __file__ not in sys.path else pass
+__file__ = __file__ if __file__ not in sys.path else ''
+	
+sys.path.append(os.path.dirname(__file__))
+
 import pickle as json
 import socket
 from threading import Thread
