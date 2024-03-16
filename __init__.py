@@ -1,7 +1,4 @@
-try:
-	import cryptography 
-except ImportError:
-	raise ImportError('cryptography must be installed')
+
 
 import os , sys
 	
