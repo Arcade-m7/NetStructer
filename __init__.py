@@ -1,15 +1,11 @@
-import os , sys
-	
-__file = __file__ if __file__ not in sys.path else ''
-	
-sys.path.append(os.path.dirname(__file))
 import pickle as json
 import socket
 from threading import Thread
 from cryptography.fernet import Fernet
 from time import sleep
-from utlist import *
-from const import *
+from NetStructer.const import *
+from NetStructer.tools import *
+
 
 __session__ = {}
 
@@ -37,7 +33,7 @@ class Bridge:
 		self.__server = serv
 		self.__end_of_bytes = b'<end_of_bytes>'
 		self.__enc = _encryption(key=code)
-		self.__data = b''
+		self.__data = b'' ; self.__error = 0
 		
 	def __Check(data):
 		try:
@@ -87,7 +83,7 @@ class Bridge:
 			if Bridge.__Check(buffer):
 				Buffer = self.__enc.encrypt(json.dumps(buffer))
 				self.__server.send(Buffer+self.__end_of_bytes)
-				return len(buffer)
+				return len(str(buffer))
 			else:
 				raise ValueError(f"can't not encode {buffer}")
 		except TypeError:
@@ -111,9 +107,13 @@ class Bridge:
 			while self.__end_of_bytes not in self.__data:
 				var = self.__server.recv(buffer)
 				if var == b'':
-					raise ConnectionAbortedError
+					if self.__error == 100:
+						raise ConnectionAbortedError
+					else:
+						self.__error += 1
 				self.__data += var
 				if len(self.__data) >= buffer_size and buffer_size != -1:
+					self.__error = 0
 					raise Error.BufferDataError(f'the data bigger than {buffer_size}')
 			later = self.__data[self.__data.find(self.__end_of_bytes)+len(self.__end_of_bytes):]
 			pyl = json.loads(self.__enc.decrypt(self.__data[:self.__data.find(self.__end_of_bytes)]))
