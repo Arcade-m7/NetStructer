@@ -1,6 +1,14 @@
 from cryptography.fernet import Fernet
-import requests , psutil as proc
-import socket
+from psutil import net_if_addrs
+from requests import get
+from requests.exceptions import ConnectionError
+from socket import AF_INET , SOCK_STREAM
+from json import loads
+
+class InvalidIP(Exception):
+
+	def __init__(self, *args: object) -> None:
+		super().__init__(*args)
 
 def GenerateKey():
 	'''
@@ -19,8 +27,8 @@ def PublicIP():
 		return the public ip of your wifi
 	'''	
 	try:
-		return requests.get("https://api.ipify.org/?format=text").text
-	except requests.exceptions.ConnectionError:
+		return get("https://api.ipify.org/?format=text").text
+	except ConnectionError:
 		raise ValueError('You are not online -__-')
 	
 	
@@ -31,14 +39,21 @@ def LocalIP():
 	Returns:
 		return the local ip of your wifi
 	'''	
-	for x,y in proc.net_if_addrs().items():
+	for x,y in net_if_addrs().items():
 		for z in y:
 			if z.address.startswith('192.168'):
 				return z.address
 	return ''
+
+def DetailsIp(ip=''):
+	cont = loads(get(f"http://ip-api.com/json/{ip}").text)
+	if cont['status'] == 'success':
+		return cont
+	else:
+		raise InvalidIP(f"can't find {ip}")
 	
 def isTCP(ser):
-	if ser.family is socket.AF_INET and ser.type is socket.SOCK_STREAM:
+	if ser.family is AF_INET and ser.type is SOCK_STREAM:
 		return True
 	else:
 		return False

@@ -6,7 +6,6 @@ from time import sleep
 from NetStructer.const import *
 from NetStructer.tools import *
 
-
 __session__ = {}
 
 class _encryption:
@@ -28,12 +27,13 @@ class _encryption:
 
 class Bridge:
 
-	def __init__(self,serv,code=DEFAULT_ENC):
+	def __init__(self,serv,enckey=DEFAULT_ENC,timeout=None):
 		assert isTCP(serv),'Bridge accepts only TCP server'
 		self.__server = serv
 		self.__end_of_bytes = b'<end_of_bytes>'
-		self.__enc = _encryption(key=code)
+		self.__enc = _encryption(key=enckey)
 		self.__data = b'' ; self.__error = 0
+		self.TimeOut(timeout)
 		
 	def __Check(data):
 		try:
@@ -42,7 +42,7 @@ class Bridge:
 		except:
 			return False
 		
-	def Link(addr):
+	def Link(addr,**keys):
 		"""
 		Description:
 			The Link() method is a class method used to establish a connection to a server. It creates a new instance of the Bridge class representing the client side of the connection.
@@ -56,7 +56,7 @@ class Bridge:
 		"""
 		soc = socket.socket()
 		soc.connect(addr)
-		return Bridge(soc)
+		return Bridge(soc,**keys)
 		
 	def SetEncKey(self,Key):
 		"""
