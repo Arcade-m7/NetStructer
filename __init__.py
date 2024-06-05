@@ -5,6 +5,7 @@ from cryptography.fernet import Fernet
 from time import sleep
 from NetStructer.const import *
 from NetStructer.tools import *
+from io import BytesIO
 
 __session__ = {}
 
@@ -12,6 +13,20 @@ class _encryption:
 
 	def __init__(self,key=DEFAULT_ENC):
 		self.__Key = Fernet(key)
+
+	def __spliter__(buffer:bytes):
+		var = 0
+		while True:
+			were = buffer.find(b'==',var) + 2 ; 
+			if not were == -1:
+				pyload = buffer[var:were]
+				var = were 
+				if pyload:
+					yield pyload
+				else:
+					break
+			else:
+				break
 
 	def encrypt(self,data:bytes):
 		try:
@@ -21,7 +36,7 @@ class _encryption:
 
 	def decrypt(self,data:bytes):
 		try:
-			return self.__Key.decrypt(data)
+			return [self.__Key.decrypt(buffer) for buffer in _encryption.__spliter__(data)]
 		except:
 			raise KeyError(f'bad key {self.__code}')
 
@@ -70,7 +85,7 @@ class Bridge:
 		except ValueError:
 			raise KeyError("Fernet key must be 32 url-safe base64-encoded bytes.")
 
-	def SendBuffer(self,buffer):
+	def SendBuffer(self,buffer,end=True):
 		"""
 		Description:
 			The SendBuffer() method is responsible for sending data from the client to the server over the established socket connection. It ensures that the data is encrypted before transmission for secure communication.
@@ -81,8 +96,12 @@ class Bridge:
 		"""
 		try:
 			if Bridge.__Check(buffer):
-				Buffer = self.__enc.encrypt(json.dumps(buffer))
-				self.__server.send(Buffer+self.__end_of_bytes)
+				if end:
+					Buffer = self.__enc.encrypt(json.dumps(buffer))
+					self.__server.send(Buffer+self.__end_of_bytes)
+				else:
+					Buffer = self.__enc.encrypt(json.dumps(buffer))
+					self.__server.send(Buffer)
 				return len(str(buffer))
 			else:
 				raise ValueError(f"can't not encode {buffer}")
