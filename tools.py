@@ -3,7 +3,6 @@ from psutil import net_if_addrs
 from requests import get
 from requests.exceptions import ConnectionError
 from socket import AF_INET , SOCK_STREAM
-from json import loads
 
 class InvalidIP(Exception):
 
@@ -46,7 +45,7 @@ def LocalIP():
 	return ''
 
 def DetailsIp(ip=''):
-	cont = loads(get(f"http://ip-api.com/json/{ip}").text)
+	cont = get(f"http://ip-api.com/json/{ip}").json()
 	if cont['status'] == 'success':
 		return cont
 	else:
