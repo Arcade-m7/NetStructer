@@ -59,7 +59,9 @@ print(buff) #['hi im haytam',128,{b'gg':'gg'},{1,2,6,4},(False,True)]
 string = session.RecvBuffer()
 print(string) #'support us on https://www.buymeacoffee.com/Arcade.m7'
 ```
-	
+
+## Server.listen_on function
+
 ```python
 from NetStructer import Server , Bridge
 
@@ -78,7 +80,7 @@ def func(socket,cont):
 	server.listen_on(func)
 ```
 	
-## Server.listen_on function
+## other example of Server.listen_on function
 
 ```Python
  sessions = []
