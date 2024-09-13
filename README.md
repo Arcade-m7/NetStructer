@@ -2,27 +2,28 @@
 
 First, i made this module to earn some money to change my 4Gram Pc so if you can support us on https://www.buymeacoffee.com/Arcade.m7 , if you can't np enjoy. 
 
-The module facilitates secure communication between client and server applications over TCP/IP by providing classes and utilities for encryption, data transmission, error handling, and session management. 
+## Module Description:
 
-The central component of the module is the Bridge class, which acts as a communication bridge between the client and server. It handles encryption and decryption of data sent over the network to ensure secure transmission. The Bridge class also provides methods for sending and receiving data buffers between client and server.
+This module implements a TCP-based communication system with symmetric encryption (using the Fernet encryption scheme). It facilitates secure communication between clients and servers, managing file transfers and session handling over encrypted channels. The module offers functionality for both sides of a connection (client and server) and includes tools for file management, session tracking, encryption, and custom error handling.
 
-Encryption is handled by the _encryption class, which uses the Fernet encryption scheme from the cryptography library. It provides methods for encrypting and decrypting data using a specified encryption key.
+# Encrypted Communication Module
+This Python module provides a flexible and secure way to handle encrypted data transfers over a network using TCP connections. It simplifies the process of sending and receiving encrypted data while supporting temporary file storage and session management. The module is designed to handle large files, streams of data, and ensures secure communication using modern encryption standards.
 
-Error handling is implemented through the Error class, which defines custom error types for handling server initialization errors and buffer data errors.
-
-The module also includes a Server class for creating and managing server instances. The Server class initializes a socket server, listens for incoming connections, and handles communication sessions with client applications.
-
-Additionally, the Container class offers a convenient interface for managing session data. It provides methods for storing, retrieving, and clearing session data associated with client connections.
-
-Overall, this module offers a comprehensive solution for implementing secure client-server communication over TCP/IP, with features for encryption, error handling, and session management.
+## Features
+* Encrypted Communication: All data transferred between clients and servers is encrypted using the Fernet encryption protocol from the Cryptography library, ensuring secure transmission.
+* TCP-Based Communication: Built around TCP sockets for reliable network communication.
+* Temporary Data Storage: Uses NamedTemporaryFile to efficiently store large amounts of data without overloading system memory.
+* Session Management: Tracks and manages active sessions, allowing data to be associated with specific clients.
+* Compressed Transfers: Data is compressed before transmission, making it more bandwidth-efficient for large transfers.
+* Customizable Buffer Size: The module allows you to specify buffer sizes for reading and writing data, optimizing for different network conditions.
+* Error Handling: Includes error classes for server initialization issues and buffer overflow prevention.
 
 ## Installation
-You can install NetStructer using pip:
+
 ```bash
 pip install NetStructer
 ```
-## Features
-add side way encryption and maybe more ...
+
 
 **here a simple exmaple of NetStructer**
 
@@ -92,5 +93,17 @@ def func(socket,_):
 server.listen_on(func)
 ```
 
+## Features in Detail
+1. Encrypted Data Transfers:
+  * Data is securely encrypted using Fernet, making it unreadable to unauthorized entities.
+2. Temporary File Storage:
+  * Large chunks of data are temporarily stored using NamedTemporaryFile to avoid consuming too much memory.
+3. Session Management:
+  * Easily manage multiple client sessions through the Container class that tracks client connections.
+4. Efficient Data Handling:
+  * Data is compressed before sending, which speeds up transmission and reduces bandwidth usage.
+5. Customizable:
+  * The module allows you to adjust chunk sizes, timeouts, and encryption keys as needed.
+
 ## Finaly
-if you like this project please leave a star with you
+i work hard for this module so please suport us or just leave a star with you
