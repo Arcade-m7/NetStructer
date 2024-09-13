@@ -1,5 +1,6 @@
 from cryptography.fernet import Fernet
 from psutil import net_if_addrs
+from os.path import join , dirname
 from requests import get
 from requests.exceptions import ConnectionError
 from socket import AF_INET , SOCK_STREAM
@@ -56,3 +57,7 @@ def isTCP(ser):
 		return True
 	else:
 		return False
+	
+def GetServiceByPort(port):
+	with open(join(dirname(__file__),'Services.txt'),'r') as file:
+		file.readlines()

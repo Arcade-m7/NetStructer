@@ -4,37 +4,56 @@ from cryptography.fernet import Fernet
 from time import sleep
 from zlib import compress , decompress
 from tempfile import NamedTemporaryFile
-from NetStructer.const import *
-from NetStructer.tools import *
+from .const import *
+from .tools import *
+from shutil import copyfileobj
 import pickle
 
 __session__ = {}
-#python -c "from NetStructer import Server ; from time import sleep ; server = Server(('',1968)) ; server.init() ; server.listen() ; sleep(5) ; user = server.all()[0] ; user.SendBuffer(list(range(1024*10))) ; server.release()"
+
+
 
 class cl: pass
 
-class Mandger:
+class Manager:
 	
 	def __init__(self,file,encryption):
-		self.__end_of_enc = b'<end_of_enc>' ; self.__enc = encryption ; self.__pos = 0
-		self.__end_of_bytes = b'<end_of_bytes>' ; self.__counter = b'' ; self.__var = (self.__pos,0)
+		self.__end_of_enc = b'<end_of_enc>' ; self.__enc = encryption
+		self.__end_of_bytes = b'<end_of_bytes>' ; self.__counter = b''
 		if hasattr(file,'read'):
 			self.file = file
 		else:
 			self.file = open(file,'rb').read()
 
 	def get(self,chunk=MB):
+		'''
+		Description:
+			Reads a portion (or "chunk") of data from the file, decrypts it, and returns it. The method also detects specific end markers to indicate the end of a data stream.
+		Parameters:
+			chunk: The number of bytes to read at a time from the file. Default is set to MB, meaning 1 megabyte.
+		Returns:
+			data : returns the data one by one from the temp file
+			'''
+		
 		while True:
-			data = self.file.read(chunk,position=self.__var)
+			data = self.file.read(chunk,position=(0,0))
 			if self.__end_of_enc in (data:=self.__counter + data):
-				index = data.find(self.__end_of_enc) ; self.__counter = b'' ; self.__pos += index + len(self.__end_of_enc) ; self.__var = (self.__pos,0)
-				return pickle.loads(self.__enc.decrypt(decompress(data[:index])))
+				index = data.find(self.__end_of_enc) ; self.__counter = b''
+				self.store(index+len(self.__end_of_enc)) ; return pickle.loads(self.__enc.decrypt(decompress(data[:index])))
 			elif self.__end_of_bytes == data:
-				break
+				self.store(len(self.__end_of_bytes)) ; break
 			else:
-				self.__counter += data ; self.__var = (len(self.__counter)+self.__pos,0)
+				self.__counter += data
 
 	def all(self,chunk=MB):
+		'''
+		Description:
+			A generator function that reads the entire content of the file in chunks, decrypts each chunk, and yields the result until the entire file is read.
+		Parameters:
+			chunk: The size of each chunk to read from the file (in bytes). Defaults to MB.
+		Returns:
+			Generator OBject: return a generat object that return all the data from the temp file
+		'''
 		while True:
 			try:
 				buffer = self.get(chunk)
@@ -45,11 +64,28 @@ class Mandger:
 			except :
 				pass
 
+	def store(self,index):
+		'''
+		Description:
+			Moves the file pointer to a specific index, copies the remaining content to a temporary file, and resets the main file pointer to use the temporary file for future reads.
+		Parameters:
+			index: The position in the file where the read operation should start.
+		'''
+		self.file.seek(index) ; folder = NamedTemporaryFile()
+		copyfileobj(self.file,folder) ; folder.seek(0,0) ; self.file.settempfile(folder)
+		
 class Storage:
 
 	def __init__(self) -> None:
 		self.__file = NamedTemporaryFile()
 		self.lengh = 0
+
+	def settempfile(self,file):
+		if hasattr(file,'write'):
+			self.__file.close()
+			self.__file = file ; self.lengh = 0
+		else:
+			raise FileNotFoundError()
 
 	def write(self,buffer,whence=2):
 		assert type(buffer) in [bytes,bytearray]
@@ -74,10 +110,6 @@ class Storage:
 		if position:
 			self.seek(*position)
 		return self.__file.read(size)
-	
-	def method(self,metho):
-		if hasattr(self.__file,metho) :
-			return getattr(self.__file,metho)
 		
 	def tell(self):
 		return self.__file.tell()
@@ -151,8 +183,10 @@ class Bridge:
 			The SendBuffer() method is responsible for sending data from the client to the server over the established socket connection. It ensures that the data is encrypted before transmission for secure communication.
 		Parameters:
 			buffer: The data to be sent from the client to the server. It can be of any serializable type.
+			end: A boolean indicating whether this is the last piece of data to be sent.
 		Returns:
-			length: The length of the original data buffer that was successfully sent.
+			x: The length of the original uncompressed buffer.
+			y: The length of the compressed buffer.
 		"""
 		try:
 			if Bridge.__Check(buffer):
@@ -178,31 +212,31 @@ class Bridge:
 		Description:
 			The RecvBuffer() method is responsible for receiving data from the server by the client over the established socket connection. It ensures that the received data is decrypted for further processing.
 		Parameters:
-			buffer: The size of the buffer used for receiving data. Defaults to 1024 bytes.
-			buffer_size: The maximum size of the data buffer. Defaults to -1 (no limit).
+			buffer: The buffer size used to receive data.
+			buffer_size: The maximum allowed size for the received buffer.
+			returns: If True, the method returns the Manager object for further processing.
+			chunk: The size of each chunk to be processed (if applicable).
 		Returns:
-			pyload: the value that recv from the server
+			If returns is False, it returns the decrypted and deserialized data as a tuple. If returns is True, it returns a Manager object for further reading.
 		"""
 		try:
-			position = 0
-			while self.__end_of_bytes not in self.__data.read(chunk,position=(position,0)):
+			position = 0 ; self.__error = 0
+			while self.__end_of_bytes not in (answer:=self.__data.read(chunk,position=(position,0))):
 				var = self.__server.recv(buffer) ; count = self.__data.lengh - len(self.__end_of_bytes) ; position = 0 if count < 0 else count
+				self.folder = self.__data
 				if var == b'':
 					if self.__error == 100:
 						raise ConnectionAbortedError
 					else:
 						self.__error += 1
-				self.__data.write(var)
-				if self.__data.lengh >= buffer_size and buffer_size != -1:
-					self.__error = 0
+				elif self.__data.lengh >= buffer_size and buffer_size != -1:
 					raise Error.BufferDataError(f'the data bigger than {buffer_size}')
+				self.__data.write(var)
 			if not returns:
-				pyload = self.__data.read()
-				later = pyload.split(self.__end_of_bytes,1)
-				pyl = [pickle.loads(dumpdata) for dumpdata in [self.__enc.decrypt(decompress(enc)) for enc in later[0].split(self.__end_of_enc) if enc]]
-				self.__data.truncate(0) ; self.__data.write(later[1])
+				manager = Manager(self.__data,self.__enc)
+				pyl = [x for x in manager.all(chunk=chunk)]
 				return tuple(pyl) if len(pyl) != 1 else pyl[0]
-			return Mandger(self.__data,self.__enc)
+			return Manager(self.__data,self.__enc)
 		except ConnectionResetError:
 			raise ConnectionResetError('the session has closed!')
 		except ConnectionAbortedError as er:
@@ -224,7 +258,8 @@ class Bridge:
 		Paramerters:
 			out: The timeout value in seconds.
 		"""
-		self.__server.settimeout(out) 
+		self.__server.settimeout(out)
+
 		
 class Error:
 
@@ -323,18 +358,16 @@ class Container:
     	"""
 		__session__.clear()
 		return None
-		
+			
 class Server(Container):
 
 	def __init__(self,addr):
 		self.addr = addr
-		self.ip , self.port = addr[::1]
-		self.cl = cl ; self.cl.run = True
-		
+		self.ip , self.port = addr
 
 	def __tunnel__(ser,session,cl):
 		global sessions 
-		while cl.run:
+		while True:
 			try:
 				client , addr = ser.accept()
 				session[addr[0]] = Bridge(client)
@@ -372,7 +405,7 @@ class Server(Container):
 		else:
 			raise Error.ServerInitializeError('the initialize function must be called')
 			
-	def listen_on(self,func):
+	def listen_on(self,func,*args,session=__session__):
 		"""
 		Description:
 			The listen_on() method starts listening for incoming connections on the server in a separate thread while executing a custom function to handle each connection.
@@ -391,7 +424,7 @@ class Server(Container):
 		"""
 		global __session__
 		if hasattr(self,'bridge'):
-			Thread(target=func,args=(self.bridge,__session__,self.cl,)).start()
+			Thread(target=func,args=(self.bridge,session,*args,)).start()
 		else:
 			Error.ServerInitializeError('the initialize function must be called')
 			
@@ -405,7 +438,4 @@ class Server(Container):
 			# Server is running
 			server.stop()
 		"""
-		
-		self.cl.run = False
-		sleep(0.5)
-		self.bridge.close()
+		sleep(0.5) ; self.bridge.close()

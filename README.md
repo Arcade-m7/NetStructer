@@ -92,5 +92,5 @@ def func(socket,_):
 server.listen_on(func)
 ```
 
-## Finally
+## Finaly
 if you like this project please leave a star with you
