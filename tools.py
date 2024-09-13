@@ -57,7 +57,3 @@ def isTCP(ser):
 		return True
 	else:
 		return False
-	
-def GetServiceByPort(port):
-	with open(join(dirname(__file__),'Services.txt'),'r') as file:
-		file.readlines()
